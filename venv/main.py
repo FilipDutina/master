@@ -30,26 +30,13 @@ def print_vertex(vertex):
         for j in i.list:
             print(j.destination.data, " weight:", j.weight)
 
-def destination_differentiation(number_list, number_of_vertices):
-    number_found_flag = True
-    random_number = random.randint(0, number_of_vertices - 1)
-    for i in number_list:
-        if (i == random_number):
-            number_found_flag = True
-        else:
-            number_found_flag = False
-
-    if(number_found_flag):
-        destination_differentiation(number_list, number_of_vertices)
-    else:
-        return random_number
-
 def generate_random_graph():
     #variable for storing recurring destination vertices
     seen_numbers = list()
-    number_of_vertices = random.randint(3, 5)
+    number_of_vertices = random.randint(3, 7)
     vertex_list = []
     rand_num = 0
+    seen_numbers.append(0)
     for i in range(1, number_of_vertices + 1):
         #print("Adding vertices to list!")
         vertex_list.append(Vertex(data = i))
@@ -58,12 +45,23 @@ def generate_random_graph():
         number_of_edges = random.randint(0, number_of_vertices)
         for i in range(0, number_of_edges):
             #print("Adding source, destination and weight to each edge!")
-            rand_num = destination_differentiation(seen_numbers, number_of_vertices)
+            same_num_flag = False
+            while(True):
+                rand_num = random.randint(0, number_of_vertices - 1)
+                for iter in seen_numbers:
+                    if (iter == rand_num):
+                        same_num_flag = True
+                if(same_num_flag == False):
+                    break
+                same_num_flag = False
             seen_numbers.append(rand_num)
             vertex.list.append(Edge(source = vertex, destination = vertex_list[rand_num], weight = random.randint(0, 20)))
+        seen_numbers.clear()
     return vertex_list
 
-
+"""
+Main function
+"""
 if __name__ == "__main__":
     vertex_list = list()
     s = Vertex(data = 's')

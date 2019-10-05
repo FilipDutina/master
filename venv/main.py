@@ -2,6 +2,21 @@ from enum import Enum
 import math
 import random
 import string
+import time
+
+class Publisher:
+    message = ''
+    topic = ''
+    def __init__(self, message = None, topic = None):
+        self.message = message
+        self.topic = topic
+
+class Subscriber:
+    message = ''
+    topic = ''
+    def __init__(self, message = None, topic = None):
+        self.message = message
+        self.topic = topic
 
 class Vertex:
     """
@@ -15,8 +30,8 @@ class Vertex:
         self.color = color
         self.parent = parent
         self.data = data
-        #This list will be used for storing information about edges
-        self.list = list()
+        self.edgeList = list()
+        self.subscribers = list()
 
 class Edge:
     def __init__(self, source = None, destination = None, weight = None):
@@ -24,16 +39,24 @@ class Edge:
         self.destination = destination
         self.weight = weight
 
+def randomString(stringLength = 5):
+    """Generate a random string of fixed length """
+    letters = string.ascii_lowercase
+    return ''.join(random.choice(letters) for i in range(stringLength))
+
 def print_vertex(vertex):
     for i in vertex:
-        print(" --------->", "Node: ", i.data)
-        for j in i.list:
-            print(j.destination.data, " weight:", j.weight)
+        print("\n\n -------------->", "Node: ", i.data)
+        for j in i.edgeList:
+            print(j.destination.data, "weight:", j.weight)
+        print("")
+        for subscriber in i.subscribers:
+            print("Message:", subscriber.message, ", Topic:", subscriber.topic)
 
 def generate_random_graph():
     #variable for storing recurring destination vertices
     seen_numbers = list()
-    number_of_vertices = random.randint(3, 7)
+    number_of_vertices = random.randint(3, 50)
     vertex_list = []
     rand_num = 0
     seen_numbers.append(0)
@@ -55,7 +78,7 @@ def generate_random_graph():
                     break
                 same_num_flag = False
             seen_numbers.append(rand_num)
-            vertex.list.append(Edge(source = vertex, destination = vertex_list[rand_num], weight = random.randint(0, 20)))
+            vertex.edgeList.append(Edge(source = vertex, destination = vertex_list[rand_num], weight = random.randint(0, 20)))
         seen_numbers.clear()
     return vertex_list
 
@@ -64,38 +87,40 @@ Main function
 """
 if __name__ == "__main__":
     vertex_list = list()
-    s = Vertex(data = 's')
-    t = Vertex(data = 't')
-    x = Vertex(data = 'x')
-    y = Vertex(data = 'y')
-    z = Vertex(data = 'z')
 
-    s.list.append(Edge(s, t, 10))
-    s.list.append(Edge(s, y, 5))
+    B1 = Vertex(data='B1')
+    B2 = Vertex(data='B2')
+    B3 = Vertex(data='B3')
 
-    t.list.append(Edge(t, x, 1))
-    t.list.append(Edge(t, y, 2))
+    #edges
+    B1.edgeList.append(Edge(B1, B2, 1))
+    B2.edgeList.append(Edge(B2, B3, 1))
 
-    x.list.append(Edge(x, z, 4))
+    #subscribers
+    B1.subscribers.append(Subscriber('', 'Topic1'))
+    B1.subscribers.append(Subscriber('', 'Topic2'))
 
-    y.list.append(Edge(y, t, 3))
-    y.list.append(Edge(y, x, 9))
-    y.list.append(Edge(y, z, 2))
+    B2.subscribers.append(Subscriber('', 'Topic1'))
+    B2.subscribers.append(Subscriber('', 'Topic2'))
+    B2.subscribers.append(Subscriber('', 'Topic3'))
 
-    z.list.append(Edge(z, s, 7))
-    z.list.append(Edge(z, x, 6))
+    B3.subscribers.append(Subscriber('', 'Topic1'))
 
-    vertex_list.append(s)
-    vertex_list.append(t)
-    vertex_list.append(x)
-    vertex_list.append(y)
-    vertex_list.append(z)
+    vertex_list.append(B1)
+    vertex_list.append(B2)
+    vertex_list.append(B3)
 
-    print("\n---------first print----------\n")
     print_vertex(vertex_list)
 
-    print("\n---------generate random graph----------\n")
-    vertex_list_rand = generate_random_graph()
+    p = Publisher()
+    p.message = 'Hello world'
+    p.topic = 'Topic1'
+    print(p.message)
 
-    print("\n---------second print----------\n")
-    print_vertex(vertex_list_rand)
+    for broker in vertex_list:
+        for subs in broker.subscribers:
+            if(subs.topic == p.topic):
+                subs.message = p.message
+
+    print("\n\n****************************************second print***********************************************")
+    print_vertex(vertex_list)

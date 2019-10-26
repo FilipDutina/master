@@ -3,6 +3,12 @@ import math
 import random
 import string
 import time
+import paho.mqtt.client
+
+class VertexColor(Enum):
+    BLACK = 0
+    GRAY = 127
+    WHITE = 255
 
 class Publisher:
     message = ''
@@ -20,16 +26,15 @@ class Subscriber:
 
 class Vertex:
     """
-    Graph vertex: A graph vertex (node) with data
+    Graph vertex: A graph vertex (node)
     """
-    def __init__(self, color = None, parent = None, data = None):
+    def __init__(self, name = None, color = None, parent = None):
         """
         Vertex constructor
-        @param color, parent, auxilary data1, auxilary data2
         """
+        self.name = name
         self.color = color
         self.parent = parent
-        self.data = data
         self.edgeList = list()
         self.subscribers = list()
 
@@ -39,21 +44,41 @@ class Edge:
         self.destination = destination
         self.weight = weight
 
-def randomString(stringLength = 5):
+def Breadth_First_Search(graph, current_vertex):
+    for vertex in graph:
+        vertex.color = VertexColor.WHITE
+        vertex.parent = None
+
+    current_vertex.color = VertexColor.GRAY
+    current_vertex.parent = None
+    Queue = list()
+    Queue.append(current_vertex)
+    while len(Queue) is not 0:
+        vertex = Queue.pop(0)
+        for v in graph:
+            if (v.color == VertexColor.WHITE):
+                v.color = VertexColor.GRAY
+                v.parent = vertex
+                Queue.append(v)
+                print(v.name)
+
+        current_vertex.color = VertexColor.BLACK
+
+def Random_String(stringLength = 5):
     """Generate a random string of fixed length """
     letters = string.ascii_lowercase
     return ''.join(random.choice(letters) for i in range(stringLength))
 
-def print_vertex(vertex):
+def Print_Vertex(vertex):
     for i in vertex:
-        print("\n\n -------------->", "Node: ", i.data)
+        print("\n\n -------------->", "Node: ", i.name)
         for j in i.edgeList:
-            print(j.destination.data, "weight:", j.weight)
+            print(j.destination.name, "weight:", j.weight)
         print("")
         for subscriber in i.subscribers:
             print("Message:", subscriber.message, ", Topic:", subscriber.topic)
 
-def generate_random_graph():
+def Generate_Random_Graph():
     #variable for storing recurring destination vertices
     seen_numbers = list()
     number_of_vertices = random.randint(3, 50)
@@ -62,9 +87,9 @@ def generate_random_graph():
     seen_numbers.append(0)
     for i in range(1, number_of_vertices + 1):
         #print("Adding vertices to list!")
-        vertex_list.append(Vertex(data = i))
+        vertex_list.append(Vertex(name = i))
     for vertex in vertex_list:
-       # print("Adding edges to each vertex!")
+        #print("Adding edges to each vertex!")
         number_of_edges = random.randint(0, number_of_vertices)
         for i in range(0, number_of_edges):
             #print("Adding source, destination and weight to each edge!")
@@ -88,9 +113,9 @@ Main function
 if __name__ == "__main__":
     vertex_list = list()
 
-    B1 = Vertex(data='B1')
-    B2 = Vertex(data='B2')
-    B3 = Vertex(data='B3')
+    B1 = Vertex(name='B1')
+    B2 = Vertex(name='B2')
+    B3 = Vertex(name='B3')
 
     #edges
     B1.edgeList.append(Edge(B1, B2, 1))
@@ -110,12 +135,11 @@ if __name__ == "__main__":
     vertex_list.append(B2)
     vertex_list.append(B3)
 
-    print_vertex(vertex_list)
+    Print_Vertex(vertex_list)
 
     p = Publisher()
     p.message = 'Hello world'
     p.topic = 'Topic1'
-    print(p.message)
 
     for broker in vertex_list:
         for subs in broker.subscribers:
@@ -123,4 +147,6 @@ if __name__ == "__main__":
                 subs.message = p.message
 
     print("\n\n****************************************second print***********************************************")
-    print_vertex(vertex_list)
+    Print_Vertex(vertex_list)
+    print("\n\n****************************************third print***********************************************")
+    Breadth_First_Search(vertex_list, B1)

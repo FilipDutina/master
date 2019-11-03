@@ -97,7 +97,7 @@ def Get_Random_Dag():
         for j in range(nodes):
             for k in range(new_nodes):
                 if random.random() < PERCENT:
-                    #sredi ovo!!!!!!
+                    #sredi ovo!!!!!!!
                     vertex_list.append(Vertex(edgeList.append = (j, k + nodes)))
 
         nodes += new_nodes

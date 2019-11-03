@@ -3,7 +3,8 @@ import math
 import random
 import string
 import time
-import paho.mqtt.client
+import paho.mqtt.client as mqtt
+import networkx as nx
 
 class VertexColor(Enum):
     BLACK = 0
@@ -54,11 +55,11 @@ def Breadth_First_Search(graph, current_vertex):
     Queue = list()
     Queue.append(current_vertex)
     while len(Queue) is not 0:
-        vertex = Queue.pop(0)
+        vertex_parent = Queue.pop(0)
         for v in graph:
             if (v.color == VertexColor.WHITE):
                 v.color = VertexColor.GRAY
-                v.parent = vertex
+                v.parent = vertex_parent
                 Queue.append(v)
                 print(v.name)
 
@@ -71,40 +72,37 @@ def Random_String(stringLength = 5):
 
 def Print_Vertex(vertex):
     for i in vertex:
-        print("\n\n -------------->", "Node: ", i.name)
-        for j in i.edgeList:
-            print(j.destination.name, "weight:", j.weight)
-        print("")
-        for subscriber in i.subscribers:
-            print("Message:", subscriber.message, ", Topic:", subscriber.topic)
+        print(i.name)
+    print()
+    for j in i.edgeList:
+        print(j.destination.name)
 
-def Generate_Random_Graph():
-    #variable for storing recurring destination vertices
-    seen_numbers = list()
-    number_of_vertices = random.randint(3, 50)
+
+def Get_Random_Dag():
+    MIN_PER_RANK = 1    # Nodes/Rank: How 'fat' the DAG should be
+    MAX_PER_RANK = 2
+    MIN_RANKS = 6   # Ranks: How 'tall' the DAG should be
+    MAX_RANKS = 10
+    PERCENT = 0.3  # Chance of having an Edge
+    nodes = 0
+
+    ranks = random.randint(MIN_RANKS, MAX_RANKS)
+
     vertex_list = []
-    rand_num = 0
-    seen_numbers.append(0)
-    for i in range(1, number_of_vertices + 1):
-        #print("Adding vertices to list!")
-        vertex_list.append(Vertex(name = i))
-    for vertex in vertex_list:
-        #print("Adding edges to each vertex!")
-        number_of_edges = random.randint(0, number_of_vertices)
-        for i in range(0, number_of_edges):
-            #print("Adding source, destination and weight to each edge!")
-            same_num_flag = False
-            while(True):
-                rand_num = random.randint(0, number_of_vertices - 1)
-                for iter in seen_numbers:
-                    if (iter == rand_num):
-                        same_num_flag = True
-                if(same_num_flag == False):
-                    break
-                same_num_flag = False
-            seen_numbers.append(rand_num)
-            vertex.edgeList.append(Edge(source = vertex, destination = vertex_list[rand_num], weight = random.randint(0, 20)))
-        seen_numbers.clear()
+    for i in range(ranks):
+        # New nodes of 'higher' rank than all nodes generated till now
+        new_nodes = random.randint(MIN_PER_RANK, MAX_PER_RANK)
+
+        # Edges from old nodes ('nodes') to new ones ('new_nodes')
+        for j in range(nodes):
+            for k in range(new_nodes):
+                if random.random() < PERCENT:
+                    #sredi ovo!!!!!!
+                    vertex_list.append(Vertex(edgeList.append = (j, k + nodes)))
+
+        nodes += new_nodes
+    print(ranks)
+
     return vertex_list
 
 """
@@ -135,18 +133,16 @@ if __name__ == "__main__":
     vertex_list.append(B2)
     vertex_list.append(B3)
 
+    #Generate_Random_Graph()
+    #Print_Vertex(vertex_list)
+    vertex_list = Get_Random_Dag()
+    #Print_Vertex(vertex_list)
+    """ print("\n\n****************************************first print***********************************************")
     Print_Vertex(vertex_list)
-
-    p = Publisher()
-    p.message = 'Hello world'
-    p.topic = 'Topic1'
-
-    for broker in vertex_list:
-        for subs in broker.subscribers:
-            if(subs.topic == p.topic):
-                subs.message = p.message
-
     print("\n\n****************************************second print***********************************************")
-    Print_Vertex(vertex_list)
-    print("\n\n****************************************third print***********************************************")
     Breadth_First_Search(vertex_list, B1)
+    print("\n\n****************************************Generate_Random_Graph()***********************************************")
+    vertex_list = Generate_Random_Graph()
+    Print_Vertex(vertex_list)
+    print("\n------------------------------------------> BFS \n")
+    Breadth_First_Search(vertex_list, vertex_list[0])"""

@@ -7,14 +7,23 @@ import paho.mqtt.client as mqtt
 import networkx as nx
 from collections import defaultdict
 
+class Subscriber:
+    message = ''
+    topic = ''
+    def __init__(self, message = None, topic = None):
+        self.message = message
+        self.topic = topic
+
 class Graph:
     nodes = list()
     edges = list()
+    subscribers = {}
 
     # Constructor
     def __init__(self):
         self.nodes = list()
         self.edges = list()
+        self.subscribers = {}
 
     # Function to print a BFS of graph
     def BFS(self, s):
@@ -52,16 +61,40 @@ def Random_String(stringLength = 5):
 
 def Print_Vertex(graph):
     print("\n***************************Graph***************************\n")
-    for i in graph.nodes:
-        print(i)
+    for node in graph.nodes:
+        print(node)
     print()
-    for value in graph.edges:
-        print(str(value[0]) + ' ' + str(value[1]))
+    for edge in graph.edges:
+        print(str(edge[0]) + ' ' + str(edge[1]))
+    for value_1 in graph.subscribers:
+        print("Node:\t", value_1)
+        for value_2 in graph.subscribers[value_1]:
+            print("Subscribers message:", value_2.message)
+
 
 def Get_Predefined_Dag():
     nodes = 3
     adjacency = list()
+    subscriber_list = list()
 
+    C1 = Subscriber()
+    C2 = Subscriber()
+    C3 = Subscriber()
+    C4 = Subscriber()
+    C5 = Subscriber()
+    C6 = Subscriber()
+
+    subscriber_list.append(C1)
+    subscriber_list.append(C2)
+    subscriber_list.append(C3)
+    subscriber_list.append(C4)
+    subscriber_list.append(C5)
+    subscriber_list.append(C6)
+
+    for iter in subscriber_list:
+        iter.message = Random_String()
+
+    # Fill the adjacency list
     adjacency.append((0, 1))
     adjacency.append((1, 2))
 
@@ -72,9 +105,18 @@ def Get_Predefined_Dag():
     # Append adjacencies
     for i in range(len(adjacency)):
         G.edges.append(adjacency[i])
+    # Append subscribers
+    G.subscribers = {G.nodes[0]: [C1, C2], G.nodes[1]: [C3, C4, C5], G.nodes[2]: [C6]}
+
+    print(G.subscribers)
 
     return G
 
+"""
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+TODO: 
+Add random Subscriber generation...
+"""
 def Get_Random_Dag():
     # Nodes/Rank: How 'fat' the DAG should be
     MIN_PER_RANK = 1

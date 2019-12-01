@@ -1,117 +1,141 @@
-"""
-TODO: Remove Nodes list from Graph class; it is redundant and it can be contained in MQTT Brokers list
-"""
-
 from enum import Enum
 import math
 import random
 import string
 import time
 import paho.mqtt.client as mqtt
+import threading
+# import networkx as nx
 from collections import defaultdict
 
-received_message = ''
-PORT = 1883
+brokerList = []
+clientList = []
+threadList = []
+threadCList = []
 
-class Broker:
-    name = ''
 
-    # Constructor
-    def __init__(self, name = None):
-        self.name = name
+class ClientMoj(mqtt.Client):
+    def on_connect(self, mqttc, obj, flags, rc):
+        print("rc: " + str(rc))
 
-    # client.subscribe("$share/group_one/up/+")
+    def on_message(self, mqttc, obj, msg):
+        print("klijent dobija poruku", mqttc)
+        print(msg.topic + " " + str(msg.qos) + " " + str(msg.payload))
 
-    def on_message(client, userdata, msg):
-        print("message received ", str(msg.payload.decode("utf-8")))
-        print("message topic=", msg.topic)
-        print("message qos=", msg.qos)
-        print("message retain flag=", msg.retain)
+    def on_publish(self, mqttc, obj, mid):
+        print("mid: " + str(mid))
+
+    def on_subscribe(self, mqttc, obj, mid, granted_qos):
+        print("Subscribed client: " + str(mid) + " " + str(granted_qos))
+
+    def runClient(self):
+        print("pre connect client")
+        self.connect("localhost", 1883)
+        print("pre subscribe client")
+        self.subscribe("$share/group_one/up/+")
+        print("subsribovao se klijent")
+        rc = 0
+        while rc == 0:
+            rc = self.loop()
+        return rc
+
+
+class BrokerFirst(mqtt.Client):
+    def on_connect(self, mqttc, obj, flags, rc):
+        print("rc: " + str(rc))
+
+    def on_message(self, mqttc, obj, msg):
+        print("broker dobija poruku", mqttc)
+        print(msg.topic + " " + str(msg.qos) + " " + str(msg.payload))
         message = str(msg.payload.decode("utf-8"))
-        client.publish("up/data", message)
+        mqttc.publish("up/data", message)
 
-class Subscriber:
-    name = ''
+    def on_publish(self, mqttc, obj, mid):
+        print("mid: " + str(mid))
 
-    # Constructor
-    def __init__(self, name = None):
-        self.name = name
+    def on_subscribe(self, mqttc, obj, mid, granted_qos):
+        print("Subscribed: " + str(mid) + " " + str(granted_qos))
 
-    def on_connect(client, userdata, flags, rc):
-        print("Connected with result code " + str(rc))
-        # client.subscribe("python/test")
-        client.subscribe("$share/group_one/up/+")
+    def run(self):
+        print("pre connect broker")
+        self.connect("localhost", 1883)
+        print("pre subscribe broker")
+        self.subscribe("python/test")
 
-    def on_message(client, userdata, msg):
-        print("message received ", str(msg.payload.decode("utf-8")))
-        print("message topic=", msg.topic)
-        print("message qos=", msg.qos)
-        print("message retain flag=", msg.retain)
-        received_message = str(msg.payload.decode("utf-8"))
+        rc = 0
+        while rc == 0:
+            rc = self.loop()
+        return rc
+
+
+class BrokerOther(mqtt.Client):
+    def on_connect(self, mqttc, obj, flags, rc):
+        print("rc: " + str(rc))
+
+    def on_message(self, mqttc, obj, msg):
+        print("broker dobija porukuuuu", mqttc)
+        print(msg.topic + " " + str(msg.qos) + " " + str(msg.payload))
+        message = str(msg.payload.decode("utf-8"))
+        # mqttc.publish("up/data", message)
+
+    def on_publish(self, mqttc, obj, mid):
+        print("mid: " + str(mid))
+
+    def on_subscribe(self, mqttc, obj, mid, granted_qos):
+        print("Subscribed: " + str(mid) + " " + str(granted_qos))
+
+    def runOther(self):
+        print("Connect other broker")
+        self.connect("localhost", 1883)
+        self.subscribe("$share/group_one/up/+")
+
+        rc = 0
+        while rc == 0:
+            rc = self.loop()
+        return rc
+
 
 class Graph:
     nodes = list()
-    brokers = list()
-    mqtt_brokers = list()
-
-    subscribers = {}
-    mqtt_clients = list()
-
     edges = list()
+    subscribers = {}
 
     # Constructor
     def __init__(self):
         self.nodes = list()
-        self.brokers = list()
-        self.mqtt_brokers = list()
-        self.subscribers = {}
-        self.mqtt_clients = list()
         self.edges = list()
+        self.subscribers = {}
 
-def Broker_Connect(broker):
-    client = mqtt.Client(broker.name)
+    # Function to print a BFS of graph
+    def BFS(self, s):
 
-    client.on_connect = On_Connect
-    client.connect("localhost", PORT)
-    client.on_message = on_message
-    try:
-        client.loop_forever()
-    except KeyboardInterrupt:
-        client.disconnect()
-        client.loop_stop()
+        print("\nBreadth First Search:")
 
-def On_Connect(client, userdata, flags, rc):
-    print("Connected with result code " + str(rc))
-    client.subscribe("python/test")
+        # Mark all the vertices as not visited
+        visited = [False] * (len(self.nodes))
 
-# Function to print a BFS of graph
-def BFS(graph, source_node):
-    print("\nBreadth First Search:")
+        # Create a queue for BFS
+        queue = list()
 
-    # Mark all the vertices as not visited
-    visited = [False] * (len(graph.nodes))
+        # Mark the source node as visited and enqueue it
+        queue.append(s)
+        visited[s] = True
 
-    # Create a queue for BFS
-    queue = list()
+        while queue:
+            # Dequeue a vertex from queue and print it
+            s = queue.pop(0)
+            print(s, end=" ")
 
-    # Mark the source node as visited and enqueue it
-    queue.append(source_node)
-    visited[source_node] = True
+            # Get all adjacent vertices of the
+            # dequeued vertex s. If a adjacent
+            # has not been visited, then mark it
+            # visited and enqueue it
+            for i in self.nodes:
+                if visited[i] == False:
+                    queue.append(i)
+                    visited[i] = True
+        print()
 
-    while queue:
-        # Dequeue a vertex from queue and print it
-        source_node = queue.pop(0)
-        print(source_node, end = " ")
-
-        # Get all adjacent vertices of the
-        # dequeued vertex source_node. If a adjacent
-        # has not been visited, then mark it
-        # visited and enqueue it
-        for i in graph.nodes:
-            if visited[i] == False:
-                queue.append(i)
-                visited[i] = True
-    print()
 
 def Random_String(stringLength=5):
     """Generate a random string of fixed length """
@@ -120,7 +144,7 @@ def Random_String(stringLength=5):
 
 
 def Print_Graph(graph):
-    print("\n***************************Graph***************************\n")
+    print("\n***************************Print Graph***************************\n")
     for node in graph.nodes:
         print(node)
     print()
@@ -132,12 +156,12 @@ def Print_Graph(graph):
         for sub in graph.subscribers[node]:
             print("Subscriber:", sub.name)
 
+
 def Get_Predefined_Dag():
     sub_count = 1
     nodes = 3
     adjacency = list()
     subscriber_list = list()
-    clients = list()
 
     S1 = Subscriber()
     S2 = Subscriber()
@@ -170,22 +194,10 @@ def Get_Predefined_Dag():
         G.edges.append(adjacency[i])
     # Append subscribers
     G.subscribers = {G.nodes[0]: [S1, S2], G.nodes[1]: [S3, S4, S5], G.nodes[2]: [S6]}
-    # Append MQTT clients
-    for i in range(len(subscriber_list)):
-        client = mqtt.Client(subscriber_list[i].name)
-        G.mqtt_clients.append(client)
-
-    for i in range(nodes):
-        G.brokers.append(Broker())
-
-    for i in range(nodes):
-        G.brokers[i].name = "B" + str(G.nodes[i])
-        client = mqtt.Client(G.brokers[i].name)
-        G.mqtt_brokers.append(client)
 
     return G
 
-"""
+
 def Get_Random_Dag():
     # Nodes/Rank: How 'fat' the DAG should be
     MIN_PER_RANK = 1
@@ -226,37 +238,75 @@ def Get_Random_Dag():
     for i in range(len(adjacency)):
         G.edges.append(adjacency[i])
     # Add subscribers to node
+    # brokerList.append(Broker("BrokerFirst"))
     for i in range(nodes):
-        num_of_subs = random.randint(0, MAX_SUBS)
-        for j in range(num_of_subs):
-            subscriber_list.append(Subscriber())
+        print("USAO SAM U FOR, VREDNOST I JE: ", i)
+        # num_of_subs = random.randint(0, MAX_SUBS)
+        # num_of_subs = 5
+        # for j in range(num_of_subs):
+        # subscriber_list.append(Subscriber())
+        brokerList.append(BrokerOther("Broker" + str(i)))
+        print("Apendovao brokera: ", i)
+        # for n in range(2):
+        #    clientList.append(ClientMoj("Broker"+str(i)+"Client"+str(n)))
         G1 = {G.nodes[i]: subscriber_list}
         G.subscribers.update(G1)
         subscriber_list = list()
 
+    return G
+
+
+"""
     for node in G.subscribers:
         for subscriber in G.subscribers[node]:
             subscriber.name = "S" + str(sub_count)
             sub_count += 1
-
-    return G
 """
+# return G
 
 """
 Main function
 """
 if __name__ == "__main__":
-    """
+
     random_graph = Get_Random_Dag()
-    Print_Graph(random_graph)
+    # Print_Graph(random_graph)
 
     random_graph.BFS(4)
-    """
-    predefined_graph = Get_Predefined_Dag()
-    Print_Graph(predefined_graph)
 
-    broker = Broker("B1")
-    Broker_Connect(broker)
+    # predefined_graph = Get_Predefined_Dag()
+    # Print_Graph(predefined_graph)
 
-    BFS(predefined_graph, 1)
+    # predefined_graph.BFS(1)
+    BrokerFirst = BrokerFirst("BrokerFirst")
+    t1 = threading.Thread(target=BrokerFirst.run)
+    # t1.start()
+    # t1.join()
+    print("Duzina liste je: ", len(brokerList))
 
+    for i in range(len(brokerList)):
+        print("POKRECEM NITI ZA BROKERE")
+        threadList.append(threading.Thread(target=brokerList[i].runOther))
+        # for j in range(2):
+        #    threadCList.append(threading.Thread(target=clientList[j+(2*i)].runClient))
+
+    print("Duzina thread liste je: ", len(threadList))
+    print("Duzina cthread liste je: ", len(threadCList))
+    # r = 0
+    t1.start()
+    for i in range(len(threadList)):
+        print("Starting broker: ", i)
+        threadList[i].start()
+        # for j in range(2):
+        # print("RRRRR je sada: ", r)
+        #    threadCList[j+(2*i)].start()
+        # r += 1
+
+    # r = 0
+    t1.join()
+    for i in range(len(threadList)):
+        threadList[i].join()
+        # for j in range(2):
+        # print("RRRRRR Je sada: ", r)
+        #    threadCList[j+(2*i)].join()
+        # r += 1
